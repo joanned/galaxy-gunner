@@ -407,6 +407,14 @@ static void cancel_timers() {
   }
 }
 
+static void server_update_highscore(uint8_t highscore) {
+  DictionaryIterator *iterator;
+  app_message_outbox_begin(&iterator);
+  dict_write_uint8(iterator, KEY_SET_HIGHSCORE, highscore);
+  dict_write_end(iterator);
+  app_message_outbox_send();
+}
+
 static void game_logic() {
   if (gameover) {
     level = 1;
@@ -416,6 +424,15 @@ static void game_logic() {
     int highscore = pge_title_get_highscore();
     if (score > highscore) {
       pge_title_set_highscore(score);
+    }
+
+    uint8_t global_highscore = 0;
+    if (persist_exists(KEY_HIGHSCORE)) {
+      global_highscore = persist_read_int(KEY_HIGHSCORE);
+    }
+
+    if (highscore > global_highscore) {
+      server_update_highscore(global_highscore);
     }
     
     app_focus_service_unsubscribe();
@@ -614,6 +631,42 @@ static void title_click_handler(int button_id) {
   game_start();
 }
 
+static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
+  APP_LOG(APP_LOG_LEVEL_INFO, "Message received");
+  Tuple *t = dict_read_first(iterator);
+
+  while (t != NULL) {
+    if (t->key == KEY_JS_READY) {
+      /* get current global highscore */
+      DictionaryIterator *iterator;
+      app_message_outbox_begin(&iterator);
+      dict_write_uint8(iterator, KEY_GET_HIGHSCORE, 1);
+      dict_write_end(iterator);
+      app_message_outbox_send();
+    } else if (t->key == KEY_HIGHSCORE) {
+      /* set the received highscore on screen */
+      int global_highscore = t->value->int8;
+       APP_LOG(APP_LOG_LEVEL_INFO, "global highscore: %d", global_highscore);
+      /* store global highscore in persistent memory */
+      persist_write_int(KEY_HIGHSCORE, global_highscore);
+    }
+
+    t = dict_read_next(iterator);
+  }
+}
+
+static void inbox_dropped_callback(AppMessageResult reason, void *context) {
+  APP_LOG(APP_LOG_LEVEL_ERROR, "Message dropped");
+}
+
+static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context) {
+  APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox send failed");
+}
+
+static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
+  APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success");
+}
+
 void pge_init(void) {
   /* show title page */
   pge_title_show_highscore(true);
@@ -622,6 +675,24 @@ void pge_init(void) {
     
   /* make backlight stay on when in game */
   light_enable(true);
+
+  app_message_register_inbox_received(inbox_received_callback);
+  app_message_register_inbox_dropped(inbox_dropped_callback);
+  app_message_register_outbox_sent(outbox_sent_callback);
+  app_message_register_outbox_failed(outbox_failed_callback);
+
+  app_message_open(
+    app_message_inbox_size_maximum(),
+    app_message_outbox_size_maximum()
+  );
+
+  /* show persistent data's global highscore */
+  int global_highscore = 0;
+  if (persist_exists(KEY_HIGHSCORE)) {
+    global_highscore = persist_read_int(KEY_HIGHSCORE);
+  }
+  //todo: SHOWWWWW dis
+  APP_LOG(APP_LOG_LEVEL_INFO, "init global highscore: %d", global_highscore);
 }
 
 void pge_deinit(void) {

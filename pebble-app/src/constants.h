@@ -46,6 +46,8 @@
 #define POWERUP_TIME 2500
 #define FPS 20
 
+#define KEY_HIGHSCORE 123
+
 typedef enum direction {
   LEFT,
   RIGHT,
@@ -58,5 +60,11 @@ typedef enum invader_type {
   INVADER_RESOURCE_SQUID,
   INVADER_RESOURCE_POWERUP
 } invader_type;
+
+typedef enum key_type {
+	KEY_JS_READY = 1,
+	KEY_GET_HIGHSCORE = 2,
+	KEY_SET_HIGHSCORE = 3
+} key_type;
 
 #endif
