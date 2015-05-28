@@ -1,0 +1,49 @@
+{
+    "appKeys": {},
+    "capabilities": [
+        ""
+    ],
+    "companyName": "jdeng@getpebble.com",
+    "longName": "Galaxy Gunner",
+    "projectType": "native",
+    "resources": {
+        "media": [
+            {
+                "file": "images/title4.png",
+                "name": "TITLE",
+                "type": "png"
+            },
+            {
+                "file": "images/shooter3.png",
+                "name": "SHOOTER",
+                "type": "png"
+            },
+            {
+                "file": "images/invader3.png",
+                "name": "INVADER3",
+                "type": "png"
+            },
+            {
+                "file": "images/invader2.png",
+                "name": "INVADER2",
+                "type": "png"
+            },
+            {
+                "file": "images/invader.png",
+                "name": "INVADER1",
+                "type": "png"
+            }
+        ]
+    },
+    "sdkVersion": "3",
+    "shortName": "Galaxy Gunner",
+    "targetPlatforms": [
+        "basalt"
+    ],
+    "uuid": "6a09e6b9-e2e2-4392-98ad-ca43de068ed4",
+    "versionLabel": "1.0",
+    "versionCode":"1",
+    "watchapp": {
+        "watchface": false
+    }
+}
