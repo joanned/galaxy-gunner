@@ -6,7 +6,6 @@ Pebble.addEventListener('appmessage', onAppMessageReceived);
 var BASE_URL = 'http://2bb6d195.ngrok.io';
 
 function onReady() {
-	 console.log('onready');
   var data = {
     jsReady: true
   };
@@ -15,25 +14,51 @@ function onReady() {
 
 }
 
+function getHighscore() {
+  var url = BASE_URL + '/highscore';
+
+  xhrPostRequest(url, function (xhr) {
+    if (xhr.readyState === 4) {
+      var success = (xhr.status === 200);
+      console.log('got highscore from db:' + xhr.responseText);
+      var data = {
+        updateSuccessful: success
+      };
+
+      Pebble.sendAppMessage(data, onAppMessageSuccess, onAppMessageFailure);
+    }
+  });
+}
+
+function setHighscore(highscore) {
+  var xhr = new XMLHttpRequest();
+
+  var url = BASE_URL + '/highscore';
+  var params = 'highscore=' + highscore.toString();
+
+  console.log('about to make xhr reuqest send highscore');
+
+  xhrPostRequest(url, params, function (xhr) {
+    if (xhr.readyState === 4) {
+      var success = (xhr.status === 200);
+      console.log('send xhr success?' + success);
+      var data = {
+        updateSuccessful: success
+      };
+
+      Pebble.sendAppMessage(data, onAppMessageSuccess, onAppMessageFailure);
+    }
+  });
+}
+
 function onAppMessageReceived(e) {
-	if (e.payload.getHighscore) {
+  console.log('e:' + e.payload);
+  console.log('e.getHighscore:' + e.payload.getHighscore);
+  console.log('e.setHighscore:' + e.payload.setHighscore);
+  setHighscore(5);
+  //getHighscore();
 
-	} else if (e.payload.setHighscore) {
-
-	}
-
-	xhrPostRequest(BASE_URL, params, function (xhr) {
-	    if (xhr.readyState === 4) {
-	      var success = (xhr.status === 200);
-
-	      var data = {
-	        updateSuccessful: success
-	      };
-
-	      Pebble.sendAppMessage(data, onAppMessageSuccess, onAppMessageFailure);
-	    }
-  	});
-	
+  //todo: tingssss
 }
 
 function xhrPostRequest(url, params, onReadyStateChange) {
@@ -51,6 +76,17 @@ function xhrPostRequest(url, params, onReadyStateChange) {
 
   return xhr;
 }
+
+// function xhrGetRequest(url, onReadyStateChange) {
+//   var xhr = new XMLHttpRequest();
+
+//   xhr.onreadystatechange = function () {
+//     onReadyStateChange(xhr);
+//   };
+
+//   xhr.open('GET', url);
+//   xhr.send(null);
+// }
 
 
 

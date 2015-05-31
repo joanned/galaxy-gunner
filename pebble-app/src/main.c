@@ -41,6 +41,7 @@ static bool powerup = false;
 static bool gameover = false;
 static int previous_highscore = 0;
 static bool click_enabled = false;
+static bool once_token = false;
    
 static AppTimer *shooter_timer; 
 static AppTimer *invader_bullet_timer;
@@ -159,6 +160,7 @@ static void reset() {
   num_invaders_left = MAX_NUM_INVADERS;
   invaders_direction = RIGHT;
   powerup = false;
+  once_token = false;
 
   /* destroy shooter bullets still deployed */
   for (int i = 0; i < NUM_BULLETS; i++) { 
@@ -408,6 +410,7 @@ static void cancel_timers() {
 }
 
 static void server_update_highscore(uint8_t highscore) {
+  APP_LOG(APP_LOG_LEVEL_INFO, "updating score");
   DictionaryIterator *iterator;
   app_message_outbox_begin(&iterator);
   dict_write_uint8(iterator, KEY_SET_HIGHSCORE, highscore);
@@ -416,8 +419,10 @@ static void server_update_highscore(uint8_t highscore) {
 }
 
 static void game_logic() {
-  if (gameover) {
+  if (gameover && once_token == false) {
     level = 1;
+
+    //server_update_highscore(score); //todo remove
     
     cancel_timers();
     
@@ -432,10 +437,13 @@ static void game_logic() {
     }
 
     if (highscore > global_highscore) {
-      server_update_highscore(global_highscore);
+      //APP_LOG(APP_LOG_LEVEL_INFO, "udpating highscore: %d", highscore);
+      //server_update_highscore(global_highscore);
     }
     
     app_focus_service_unsubscribe();
+
+    once_token = true;
   } else {
     shooter_bullet_logic();
     invader_bullet_logic();
@@ -542,9 +550,11 @@ static void draw(GContext *context) {
 
 /* button click handler */
 static void click(int button_id) {
+  server_update_highscore(score);
   if (gameover) {
     cancel_timers();
     window_stack_pop(false);
+    server_update_highscore(score);
     
   /* shoot bullet on click, if this mode is enabled (disabled for now) */
   } else if (click_enabled && button_id == BUTTON_ID_UP) {
@@ -636,14 +646,16 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   Tuple *t = dict_read_first(iterator);
 
   while (t != NULL) {
+    APP_LOG(APP_LOG_LEVEL_INFO, "KEY: %d VLUE: %d", (int)t->key, (int)t->value->int8);
     if (t->key == KEY_JS_READY) {
+      APP_LOG(APP_LOG_LEVEL_INFO, "KEY_JS_READY");
       /* get current global highscore */
       DictionaryIterator *iterator;
       app_message_outbox_begin(&iterator);
       dict_write_uint8(iterator, KEY_GET_HIGHSCORE, 1);
       dict_write_end(iterator);
       app_message_outbox_send();
-    } else if (t->key == KEY_HIGHSCORE) {
+    } else if (t->key == KEY_GET_HIGHSCORE) {
       /* set the received highscore on screen */
       int global_highscore = t->value->int8;
        APP_LOG(APP_LOG_LEVEL_INFO, "global highscore: %d", global_highscore);
