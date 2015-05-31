@@ -36,7 +36,7 @@ app.use(bodyParser.urlencoded({
 }));
 
 app.post('/highscore', saveHighscore);
-//app.get('/highscore', getHighscore);
+app.get('/highscore/:get', getHighscore);
 
 function saveHighscore (req, res) {
 	console.log('save highscore start');
@@ -45,14 +45,22 @@ function saveHighscore (req, res) {
 
 	Highscore.findOne({}, function(err, highscore) {
 		console.log(highscore);
+		highscore.highscore = newHighscore;
+		highscore.save(function(err) {
+			if (err) throw err;
+			console.log('highscore saved:' + highscore);
+		});
 		if (err) throw err;
-		console.log('highscore updated:' + newHighscore);
 	});
 }
 
 function getHighscore (req, res) {
 	console.log('get highscore start');
-	console.log(globalHighscore.highscore);
+	Highscore.findOne({}, function(err, highscore) {
+		console.log(highscore);
+		if (err) throw err;
+		console.log('highscore got:' + highscore.highscore);
+	});
 }
 
 //env(__dirname + '/.env');

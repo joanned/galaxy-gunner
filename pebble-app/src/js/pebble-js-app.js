@@ -15,9 +15,9 @@ function onReady() {
 }
 
 function getHighscore() {
-  var url = BASE_URL + '/highscore';
+  var url = BASE_URL + '/highscore/:get';
 
-  xhrPostRequest(url, function (xhr) {
+  xhrGetRequest(url, function (xhr) {
     if (xhr.readyState === 4) {
       var success = (xhr.status === 200);
       console.log('got highscore from db:' + xhr.responseText);
@@ -56,16 +56,16 @@ function onAppMessageReceived(e) {
   console.log('e.getHighscore:' + e.payload.getHighscore);
   console.log('e.setHighscore:' + e.payload.setHighscore);
   setHighscore(5);
-  //getHighscore();
+  getHighscore();
 
   //todo: tingssss
 }
 
-function xhrPostRequest(url, params, onReadyStateChange) {
+function xhrPostRequest(url, params, postOnReadyStateChange) {
   var xhr = new XMLHttpRequest();
 
   xhr.onreadystatechange = function () {
-    onReadyStateChange(xhr);
+    postOnReadyStateChange(xhr);
   };
 
   xhr.open('POST', url);
@@ -77,16 +77,16 @@ function xhrPostRequest(url, params, onReadyStateChange) {
   return xhr;
 }
 
-// function xhrGetRequest(url, onReadyStateChange) {
-//   var xhr = new XMLHttpRequest();
+function xhrGetRequest(url, getOnReadyStateChange) {
+  var xhr = new XMLHttpRequest();
 
-//   xhr.onreadystatechange = function () {
-//     onReadyStateChange(xhr);
-//   };
+  xhr.onreadystatechange = function () {
+    getOnReadyStateChange(xhr);
+  };
 
-//   xhr.open('GET', url);
-//   xhr.send(null);
-// }
+  xhr.open('GET', url, true);
+  xhr.send();
+}
 
 
 
