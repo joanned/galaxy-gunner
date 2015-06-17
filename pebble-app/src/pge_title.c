@@ -4,6 +4,7 @@
 static Window *s_window = NULL;
 static TextLayer *s_title_layer, *s_up_layer, *s_select_layer, *s_down_layer;
 static TextLayer *s_score_layer;
+static TextLayer *s_score2_layer;
 static BitmapLayer *s_bg_layer = NULL;
 static GBitmap *s_bg_bitmap = NULL;
 
@@ -17,7 +18,8 @@ static char s_up_buffer[PGE_TITLE_ACTION_MAX] = {0};
 static char s_select_buffer[PGE_TITLE_ACTION_MAX] = {0};
 static char s_down_buffer[PGE_TITLE_ACTION_MAX] = {0};
 static char s_score_buffer[PGE_TITLE_ACTION_MAX] = {0};
-static bool s_light_on;
+static char s_score2_buffer[PGE_TITLE_ACTION_MAX] = {0};
+//static bool s_light_on;
 
 static bool s_show_highscore = false;
 
@@ -107,13 +109,22 @@ static void window_load(Window *window) {
   layer_add_child(window_layer, text_layer_get_layer(s_down_layer));
 
   // Score TextLayer
-  s_score_layer = text_layer_create(GRect(18, 138, window_bounds.size.w - 36, 20));
+  s_score_layer = text_layer_create(GRect(18, 130, window_bounds.size.w - 36, 20));
   text_layer_set_text_color(s_score_layer, s_title_color);
   text_layer_set_background_color(s_score_layer, GColorClear);
   text_layer_set_text_alignment(s_score_layer, GTextAlignmentCenter);
   text_layer_set_font(s_score_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
   text_layer_set_text(s_score_layer, s_score_buffer);
   layer_add_child(window_layer, text_layer_get_layer(s_score_layer));
+
+  // Global Highscore TextLayer
+  s_score2_layer = text_layer_create(GRect(18, 147, window_bounds.size.w - 36, 20));
+  text_layer_set_text_color(s_score2_layer, s_title_color);
+  text_layer_set_background_color(s_score2_layer, GColorClear);
+  text_layer_set_text_alignment(s_score2_layer, GTextAlignmentCenter);
+  text_layer_set_font(s_score2_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
+  text_layer_set_text(s_score2_layer, s_score2_buffer);
+  layer_add_child(window_layer, text_layer_get_layer(s_score2_layer));
 }
 
 static void window_unload(Window *window) {
@@ -123,6 +134,7 @@ static void window_unload(Window *window) {
   text_layer_destroy(s_select_layer);
   text_layer_destroy(s_down_layer);
   text_layer_destroy(s_score_layer);
+  text_layer_destroy(s_score2_layer);
 
   // Finally
   window_destroy(window);
@@ -139,7 +151,9 @@ void pge_title_push(char *title, char *up_action, char *select_action, char *dow
   snprintf(s_up_buffer, sizeof(s_up_buffer), "%s", up_action);
   snprintf(s_select_buffer, sizeof(s_select_buffer), "%s", select_action);
   snprintf(s_down_buffer, sizeof(s_down_buffer), "%s", down_action);
-  snprintf(s_score_buffer, sizeof(s_score_buffer), "High Score %d", pge_title_get_highscore());
+  APP_LOG(APP_LOG_LEVEL_INFO, "title push HS: %d", pge_title_get_highscore());
+  snprintf(s_score_buffer, sizeof(s_score_buffer), "Highscore %d", pge_title_get_highscore());
+  snprintf(s_score2_buffer, sizeof(s_score2_buffer), "Global HS %d", pge_title_get_global_highscore());
 
   s_click_handler = click_handler;
 
@@ -172,6 +186,19 @@ int pge_title_get_highscore() {
   } else {
     return 0;
   }
+}
+
+int pge_title_get_global_highscore() {
+  if(persist_exists(KEY_HIGHSCORE)) {
+    return persist_read_int(KEY_HIGHSCORE);
+  } else {
+    return 0;
+  }
+   //uint8_t global_highscore = 0;
+}
+
+void pge_title_set_global_highscore(int new_highscore) {
+  persist_write_int(KEY_HIGHSCORE, new_highscore);
 }
 
 void pge_title_show_highscore(bool show) {

@@ -393,20 +393,21 @@ static void powerup_invader_logic() {
 }
 
 static void start_timers() {
+  //APP_LOG(APP_LOG_LEVEL_INFO, "start timers");
   shooter_fire_bullet();
   invader_fire_bullet();
   invader_move_timer_callback();
 }
 
 static void cancel_timers() {
-  if (shooter_timer) {
+  //if (shooter_timer) {
     app_timer_cancel(shooter_timer);
     app_timer_cancel(invader_bullet_timer);
     app_timer_cancel(invader_move_timer);
 
     /* used to check later so we don't cancel timers at every loop */
-    shooter_timer = NULL;
-  }
+    //shooter_timer = NULL;
+  //}
 }
 
 static void server_update_highscore(uint8_t highscore) {
@@ -418,28 +419,33 @@ static void server_update_highscore(uint8_t highscore) {
   app_message_outbox_send();
 }
 
+static void calculate_highscore() {
+  //APP_LOG(APP_LOG_LEVEL_INFO, "score: %d", score);
+  int highscore = pge_title_get_highscore();
+  //APP_LOG(APP_LOG_LEVEL_INFO, "highscore: %d", highscore);
+    if (score > highscore) {
+      //APP_LOG(APP_LOG_LEVEL_INFO, "score > highscore");
+      //APP_LOG(APP_LOG_LEVEL_INFO, "calc highscore score > highscore setting HS: %d", score);
+      pge_title_set_highscore(score);
+    }
+   highscore = pge_title_get_highscore();
+  int global_highscore = pge_title_get_global_highscore();
+  //APP_LOG(APP_LOG_LEVEL_INFO, "global_highscore: %d", global_highscore);
+
+    if (highscore > global_highscore) {
+      //APP_LOG(APP_LOG_LEVEL_INFO, "APP udpating highscore: %d", highscore);
+      pge_title_set_global_highscore(highscore);
+      server_update_highscore(highscore);
+    }
+}
+
 static void game_logic() {
   if (gameover && once_token == false) {
     level = 1;
-
-    //server_update_highscore(score); //todo remove
     
     cancel_timers();
     
-    int highscore = pge_title_get_highscore();
-    if (score > highscore) {
-      pge_title_set_highscore(score);
-    }
-
-    uint8_t global_highscore = 0;
-    if (persist_exists(KEY_HIGHSCORE)) {
-      global_highscore = persist_read_int(KEY_HIGHSCORE);
-    }
-
-    if (highscore > global_highscore) {
-      //APP_LOG(APP_LOG_LEVEL_INFO, "udpating highscore: %d", highscore);
-      //server_update_highscore(global_highscore);
-    }
+    calculate_highscore();
     
     app_focus_service_unsubscribe();
 
@@ -497,6 +503,15 @@ static void draw(GContext *context) {
                        GTextOverflowModeWordWrap,
                        GTextAlignmentCenter,
                        NULL);
+
+     snprintf(score_str, sizeof(score_str), "Global HS %d", pge_title_get_global_highscore());
+    graphics_draw_text(context, 
+                       score_str, 
+                       final_scores_font, 
+                       (GRect) {.origin = {0,110}, .size = {screen_size.w, 50}}, 
+                       GTextOverflowModeWordWrap,
+                       GTextAlignmentCenter,
+                       NULL);
   } else {
     graphics_context_set_text_color(context, GColorWhite);
     
@@ -550,17 +565,18 @@ static void draw(GContext *context) {
 
 /* button click handler */
 static void click(int button_id) {
-  server_update_highscore(score);
   if (gameover) {
     cancel_timers();
     window_stack_pop(false);
-    server_update_highscore(score);
     
   /* shoot bullet on click, if this mode is enabled (disabled for now) */
   } else if (click_enabled && button_id == BUTTON_ID_UP) {
     GPoint shooter_position = pge_sprite_get_position(shooter->sprite);
       
     create_shooter_bullet(UP, shooter_position);
+  } else if (button_id == BUTTON_ID_BACK) {
+    APP_LOG(APP_LOG_LEVEL_INFO, "back button pressed");
+    calculate_highscore();
   }
 }
 
@@ -642,30 +658,41 @@ static void title_click_handler(int button_id) {
 }
 
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "Message received");
+  // Get the first pair
   Tuple *t = dict_read_first(iterator);
 
+  if (t==NULL) {
+    APP_LOG(APP_LOG_LEVEL_INFO, "T STILL NULL");
+  }
+
   while (t != NULL) {
-    APP_LOG(APP_LOG_LEVEL_INFO, "KEY: %d VLUE: %d", (int)t->key, (int)t->value->int8);
-    if (t->key == KEY_JS_READY) {
+    switch(t->key) {
+    case KEY_JS_READY:
       APP_LOG(APP_LOG_LEVEL_INFO, "KEY_JS_READY");
-      /* get current global highscore */
       DictionaryIterator *iterator;
       app_message_outbox_begin(&iterator);
       dict_write_uint8(iterator, KEY_GET_HIGHSCORE, 1);
       dict_write_end(iterator);
       app_message_outbox_send();
-    } else if (t->key == KEY_GET_HIGHSCORE) {
-      /* set the received highscore on screen */
+      break;
+
+    case KEY_GET_HIGHSCORE: {
+      /* TUDU - set the received highscore on screen */
       int global_highscore = t->value->int8;
-       APP_LOG(APP_LOG_LEVEL_INFO, "global highscore: %d", global_highscore);
+       APP_LOG(APP_LOG_LEVEL_INFO, "APP got global highscore: %d", global_highscore);
       /* store global highscore in persistent memory */
       persist_write_int(KEY_HIGHSCORE, global_highscore);
+      break;
+    }
+    default:
+      APP_LOG(APP_LOG_LEVEL_ERROR, "Key %d not recognized", (int)t->key);
+      break;
     }
 
     t = dict_read_next(iterator);
   }
 }
+
 
 static void inbox_dropped_callback(AppMessageResult reason, void *context) {
   APP_LOG(APP_LOG_LEVEL_ERROR, "Message dropped");
@@ -712,8 +739,7 @@ void pge_deinit(void) {
   app_focus_service_unsubscribe();
   
   cancel_timers();
-  
-  pge_title_set_highscore(score);
+  calculate_highscore();
   light_enable(false);
   
   /* free all allocated memory */

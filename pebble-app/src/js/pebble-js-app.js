@@ -3,26 +3,35 @@
 Pebble.addEventListener('ready', onReady);
 Pebble.addEventListener('appmessage', onAppMessageReceived);
 
-var BASE_URL = 'http://2bb6d195.ngrok.io';
+var BASE_URL = 'http://0e6558ce.ngrok.io';
 
 function onReady() {
   var data = {
-    jsReady: true
+    'jsReady': true
   };
 
-  Pebble.sendAppMessage(data, onAppMessageSuccess, onAppMessageFailure);
-
+  Pebble.sendAppMessage(data,
+    function(e) {
+      console.log('Send successful.');
+    },
+    function(e) {
+      console.log('Send failed!');
+    }
+  );
 }
 
 function getHighscore() {
   var url = BASE_URL + '/highscore/:get';
 
+  console.log('about to make xhr reuqest get highscore');
+
   xhrGetRequest(url, function (xhr) {
     if (xhr.readyState === 4) {
       var success = (xhr.status === 200);
-      console.log('got highscore from db:' + xhr.responseText);
+      var json = JSON.parse(xhr.response);
+      console.log('JS app got highscore from db:' + json.highscore);
       var data = {
-        updateSuccessful: success
+        'getHighscore': json.highscore
       };
 
       Pebble.sendAppMessage(data, onAppMessageSuccess, onAppMessageFailure);
@@ -31,7 +40,6 @@ function getHighscore() {
 }
 
 function setHighscore(highscore) {
-  var xhr = new XMLHttpRequest();
 
   var url = BASE_URL + '/highscore';
   var params = 'highscore=' + highscore.toString();
@@ -42,8 +50,9 @@ function setHighscore(highscore) {
     if (xhr.readyState === 4) {
       var success = (xhr.status === 200);
       console.log('send xhr success?' + success);
+      console.log('status:' + xhr.status);
       var data = {
-        updateSuccessful: success
+        'setHighscore': success
       };
 
       Pebble.sendAppMessage(data, onAppMessageSuccess, onAppMessageFailure);
@@ -55,10 +64,12 @@ function onAppMessageReceived(e) {
   console.log('e:' + e.payload);
   console.log('e.getHighscore:' + e.payload.getHighscore);
   console.log('e.setHighscore:' + e.payload.setHighscore);
-  setHighscore(5);
-  getHighscore();
 
-  //todo: tingssss
+  if (e.payload.getHighscore) {
+    getHighscore();
+  } else if (e.payload.setHighscore) {
+    setHighscore(e.payload.setHighscore);
+  }
 }
 
 function xhrPostRequest(url, params, postOnReadyStateChange) {
@@ -87,8 +98,6 @@ function xhrGetRequest(url, getOnReadyStateChange) {
   xhr.open('GET', url, true);
   xhr.send();
 }
-
-
 
 function onAppMessageSuccess() {
   console.log('onAppMessageSuccess');

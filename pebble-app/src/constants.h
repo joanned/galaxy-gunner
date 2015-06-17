@@ -46,8 +46,6 @@
 #define POWERUP_TIME 2500
 #define FPS 20
 
-#define KEY_HIGHSCORE 123
-
 typedef enum direction {
   LEFT,
   RIGHT,

@@ -3,7 +3,6 @@
 var express = require('express'),
 	mongoose = require('mongoose'),
 	mongooseAutoIncrement = require('mongoose-auto-increment'),
-	env = require('node-env-file'),
 	bodyParser = require('body-parser');
 
 mongoose.connect('mongodb://localhost/galaxy-gunner');
@@ -16,19 +15,18 @@ var highscoreSchema = new Schema({
 
 var Highscore = mongoose.model('Highscore', highscoreSchema);
 
-module.exports = Highscore;
-
 var globalHighscore = new Highscore({
 	highscore : 0
 });
 
 globalHighscore.save(function(err) {
-	if (err) throw err;
+	if (err) {
+		console.log(error);
+	}
 
 	console.log('initial highscore saved');
 })
 
-//var port = process.env.PORT;
 var app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({
@@ -41,30 +39,43 @@ app.get('/highscore/:get', getHighscore);
 function saveHighscore (req, res) {
 	console.log('save highscore start');
 	console.log(req.body);
+	
 	var newHighscore = parseInt(req.body.highscore);
-
 	Highscore.findOne({}, function(err, highscore) {
+		if (err) {
+			res.sendStatus(500);
+		}
+
 		console.log(highscore);
 		highscore.highscore = newHighscore;
 		highscore.save(function(err) {
-			if (err) throw err;
+			if (err) {
+				res.sendStatus(500);
+			}
+
+			res.sendStatus(200);
 			console.log('highscore saved:' + highscore);
 		});
-		if (err) throw err;
+		
+		
 	});
 }
 
 function getHighscore (req, res) {
 	console.log('get highscore start');
+	console.log(req.body);
 	Highscore.findOne({}, function(err, highscore) {
-		console.log(highscore);
-		if (err) throw err;
+		if (err) {
+			res.sendStatus(500);
+		}
 		console.log('highscore got:' + highscore.highscore);
+		res.json({
+			highscore: highscore.highscore
+		});
 	});
 }
 
-//env(__dirname + '/.env');
-
-var server = app.listen(5321 , function() {
-	
+//todo: make not variable
+var server = app.listen(5454 , function() {
+	console.log("server started listening");
 });

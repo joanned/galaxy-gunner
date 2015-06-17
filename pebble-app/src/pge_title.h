@@ -7,6 +7,7 @@
 #define PGE_TITLE_ACTION_MAX 16
 
 #define PGE_TITLE_HIGHSCORE_PS_KEY 3427
+#define KEY_HIGHSCORE 1234
 
 /**
  * Show a pre-built title page with your game title and the background resource
@@ -29,5 +30,9 @@ void pge_title_set_highscore(int new_highscore);
  * Get the last save highscore
  */
 int pge_title_get_highscore();
+
+int pge_title_get_global_highscore();
+
+void  pge_title_set_global_highscore(int new_highscore);
 
 void pge_title_show_highscore(bool show);

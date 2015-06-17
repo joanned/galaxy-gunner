@@ -1,5 +1,9 @@
 {
-  "appKeys": {},
+  "appKeys": {
+    "jsReady": 1,
+    "getHighscore": 2,
+    "setHighscore": 3
+  },
   "capabilities": [
     ""
   ],
@@ -46,10 +50,5 @@
   "versionCode": "1",
   "watchapp": {
     "watchface": false
-  },
-  "appKeys": {
-    "jsReady": 1,
-    "getHighscore": 2,
-    "setHighscore": 3
   }
 }
